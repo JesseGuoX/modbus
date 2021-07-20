@@ -125,7 +125,7 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 		return
 	}
 	function := aduRequest[1]
-	functionFail := aduRequest[1] & 0x80
+	functionFail := aduRequest[1] | 0x80
 	bytesToRead := calculateResponseLength(aduRequest)
 	time.Sleep(mb.calculateDelay(len(aduRequest) + bytesToRead))
 
@@ -139,6 +139,8 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 		return
 	}
 	//if the function is correct
+	mb.serialPort.logf("modbus: n %x expected: %x data[1]:%x function:%x functionFail:%x\n", n, rtuExceptionSize, data[1], function, functionFail)
+
 	if data[1] == function {
 		//we read the rest of the bytes
 		if n < bytesToRead {
@@ -155,6 +157,12 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 			n1, err = io.ReadFull(mb.port, data[n:rtuExceptionSize])
 		}
 		n += n1
+		errStr := ""
+		if err != nil{
+			errStr = err.Error()
+		}
+		mb.serialPort.logf("modbus: n %x expected: %x err:%s\n", n, rtuExceptionSize, errStr)
+
 	}
 
 	if err != nil {
